@@ -59,7 +59,7 @@ check_for_lock() {
 break_lock() {
 	local repo=${1}
 
-	local lock_file="${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")" 
+	local lock_file="${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")"
 
 	if [ -f "${lock_file}" ]; then
 		# Check if the lock exist more then 12h
@@ -131,7 +131,7 @@ create_backup_server() {
 	shift 3
 	local paths="$@"
 
-	create_backup "${repo}" "${passwd}" "${compression}" " " " " "$@"
+	create_backup "${repo}" "${passwd}" "${compression}" "" "" "$@"
 }
 
 create_backup() {
@@ -146,30 +146,35 @@ create_backup() {
 
 	export BORG_PASSPHRASE="${passwd}"
 
-	if ! last_backup "${repo}" "${passwd}" ${time_between} || [[ ${time_between} = "" ]]; then
-		# Now we go to change the repo and therefore we need to lock it
-		while ! acquire_lock "${repo}"; do
-			sleep 300
-		done
-
-		tag="$(format_date)"	
-
-		local path
-		for path in ${paths}; do
-			if [ -d "${path}" ]; then
-				echo "${tag}" > "${path}/check-borg-backup"
-			fi
-		done
-
-		if ! cmd /usr/bin/borg create "${repo}::${tag}"  ${cmd_args} --verbose --stats -C "${compression}" ${paths}; then
-			log_backup "ERROR" "${repo}" "Could not create backup"
-			release_lock "${repo}"
-			return ${EXIT_ERROR} 
-		else
-			log_backup "INFO" "${repo}" "Successfully created backup"
-			release_lock "${repo}"
+	if ! [[ ${time_between} = "" ]]; then
+		log DEBUG "Checking if we need to create a backup"
+		if last_backup "${repo}" "${passwd}" ${time_between}; then
 			return ${EXIT_OK}
 		fi
+	fi
+
+	# Now we go to change the repo and therefore we need to lock it
+	while ! acquire_lock "${repo}"; do
+		sleep 300
+	done
+
+	tag="$(format_date)"
+
+	local path
+	for path in ${paths}; do
+		if [ -d "${path}" ]; then
+			echo "${tag}" > "${path}/check-borg-backup"
+		fi
+	done
+
+	if ! cmd /usr/bin/borg create "${repo}::${tag}"  ${cmd_args} --verbose --stats -C "${compression}" ${paths}; then
+		log_backup "ERROR" "${repo}" "Could not create backup"
+		release_lock "${repo}"
+		return ${EXIT_ERROR}
+	else
+		log_backup "INFO" "${repo}" "Successfully created backup"
+		release_lock "${repo}"
+		return ${EXIT_OK}
 	fi
 }
 
@@ -184,11 +189,11 @@ list_backups() {
 	while ! acquire_lock "${repo}"; do
 		sleep 300
 	done
-		
+
 	if ! cmd /usr/bin/borg list "${repo}"; then
 		log_backup ERROR "${repo}" "Could not list archives"
 		release_lock "${repo}"
-		return ${EXIT_ERROR} 
+		return ${EXIT_ERROR}
 	else
 		release_lock "${repo}"
 		return ${EXIT_OK}
@@ -226,10 +231,10 @@ format_time_from_timestamp() {
 			"m")
 				unit_value=$(( ${rest} / 60 ))
 				rest=$(( ${rest} % 60 ))
-				string="${string} ${unit_value}${unit}"	
+				string="${string} ${unit_value}${unit}"
 			;;
 			"s")
-				string="${string} ${rest}${unit}"	
+				string="${string} ${rest}${unit}"
 			;;
 
 
@@ -249,7 +254,7 @@ last_backup() {
 	local tag
 	local line
 	local backup
-	
+
 	local tag_date
 	local now_date
 	local diff_date
@@ -260,6 +265,11 @@ last_backup() {
 	export BORG_PASSPHRASE="${passwd}"
 
 	shopt -s extglob
+
+	if [[ ${time} = "" ]]; then
+		log ERROR "Get no time value which should be between the backups"
+		return ${EXIT_ERROR}
+	fi
 
 	while ! acquire_lock "${repo}"; do
 		sleep 300
@@ -277,7 +287,7 @@ last_backup() {
 	tmp=${line%%???, ????-??-?? ??:??:??}
 	tag=${tmp%%+([[:space:]])}
 	log_backup "INFO" "${repo}"  "Last backup tag is:'${tag}'"
-	
+
 	tag_date=$(get_timestamp_from_date "${tag}")
 	now_date=$(get_timestamp_from_date "$(format_date)")
 
@@ -296,7 +306,7 @@ last_backup() {
 prune_backup() {
 	local repo="${1}"
 	local passwd="${2}"
-	
+
 	local BORG_PASSPHRASE="${passwd}"
 
 	/usr/bin/borg prune -v "${repo}" --keep-daily=7 --keep-weekly=4 --keep-monthly=6
@@ -333,7 +343,6 @@ check_backup() {
 	# Load the fuse module
 	cmd modprobe fuse
 
-	
 	while ! acquire_lock "${repo}"; do
 		sleep 300
 	done
@@ -346,7 +355,7 @@ check_backup() {
 		tmp=${backup%%???, ????-??-?? ??:??:??}
 		tag=${tmp%%+([[:space:]])}
 		log_backup "INFO" "${repo}"  "Check backup '${tag}'"
-	
+
 		echo "${tag}" > "${tmp_file}"
 
 		# mount backup
@@ -370,5 +379,5 @@ check_backup() {
 
 	release_lock "${repo}"
 
-	exit ${return_value} 
+	return ${return_value}
 }
