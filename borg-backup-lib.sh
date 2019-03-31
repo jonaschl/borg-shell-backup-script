@@ -324,27 +324,21 @@ md5sum_get_sum() {
 	fi
 }
 
-check_backup() {
+check_repo() {
 	local repo="${1}"
 	local passwd="${2}"
 	shift 2
 	local paths="$@"
 
-	local tmp
 	local tag
 
-	local tmp_file=$(mktemp)
 	local tmp_backup_list=$(mktemp)
-	local tmp_dir=$(mktemp -d /var/tmp/XXXXXXXXXXXXXXXXXXX)
-
-	local return_value=${EXIT_OK}
 
 	export BORG_PASSPHRASE="${passwd}"
 
 	shopt -s extglob
 
 	# Load the fuse module
-	cmd modprobe fuse
 
 	while ! acquire_lock "${repo}"; do
 		sleep 300
@@ -353,34 +347,72 @@ check_backup() {
 	# cmd crashes here because  the redirect
 	cmd /usr/bin/borg list "${repo}" > "${tmp_backup_list}"
 
+	release_lock "${repo}"
+
 	while read backup; do
 		# get tag
 		tmp=${backup%%???, ????-??-?? ??:??:??}
 		tag=${tmp%%+([[:space:]])}
-		log_backup "INFO" "${repo}"  "Check backup '${tag}'"
 
-		echo "${tag}" > "${tmp_file}"
-
-		# mount backup
-		cmd /usr/bin/borg mount "${repo}::${tag}" "${tmp_dir}"
-
-
-		local path
-		for path in ${paths}; do
-			if [ -d "${path}" ]; then
-				if ! [[ "$(md5sum_get_sum "${tmp_dir}${path}/check-borg-backup")" == "$(md5sum_get_sum "${tmp_file}")" ]]; then
-					log_backup ERROR "${repo}"  "Backup '${tag}' is corrupted"
-					return_value=${EXIT_ERROR}
-				else
-					log_backup INFO "${repo}" "Backup '${tag}' is ok"
-				fi
-			fi
-		done
-
-		cmd umount "${tmp_dir}"
+		check_backup "${repo}" "${passwd}" "${tag}" ${paths}
 	done < ${tmp_backup_list}
+
+}
+
+check_backup() {
+	local repo="${1}"
+	local passwd="${2}"
+	local tag="${3}"
+	shift 3
+	local paths="$@"
+
+	local tmp_dir=$(mktemp -d /var/tmp/XXXXXXXXXXXXXXXXXXX)
+	local tmp_file=$(mktemp /var/tmp/XXXXXXXXXXXXXXXXXXX)
+	local return_value=${EXIT_OK}
+	local path
+
+	# Export the password in this shell
+	export BORG_PASSPHRASE="${passwd}"
+
+	# Load the fuse module
+	cmd modprobe fuse
+
+	while ! acquire_lock "${repo}"; do
+		sleep 300
+	done
+
+	log_backup "INFO" "${repo}"  "Check backup '${tag}'"
+
+	echo "${tag}" > "${tmp_file}"
+
+	# mount backup
+	cmd /usr/bin/borg mount "${repo}::${tag}" "${tmp_dir}"
+
+
+	for path in ${paths}; do
+		if [ -d "${tmp_dir}${path}" ]; then
+			if ! [[ "$(md5sum_get_sum "${tmp_dir}${path}/check-borg-backup")" == "$(md5sum_get_sum "${tmp_file}")" ]]; then
+
+				return_value=${EXIT_ERROR}
+			fi
+		fi
+	done
+
+
+	if [[ ${return_value} == ${EXIT_ERROR} ]]; then
+		log_backup ERROR "${repo}"  "Backup '${tag}' is corrupted"
+	else
+		log_backup DEBUG "${repo}" "Backup '${tag}' is ok"
+	fi
+
+	# Cleanup
+
+	cmd umount "${tmp_dir}"
+	rm -d ${tmp_dir}
+	rm ${tmp_file}
 
 	release_lock "${repo}"
 
 	return ${return_value}
+
 }
