@@ -27,7 +27,7 @@ acquire_lock() {
 		return ${EXIT_ERROR}
 	fi
 
-	log INFO "Acquiring lock for ${repo}"
+	log DEBUG "Acquiring lock for ${repo}"
 	touch "${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")"
 
 	return ${EXIT_OK}
@@ -41,7 +41,7 @@ release_lock() {
 		return ${EXIT_ERROR}
 	fi
 
-	log INFO "Release lock for: ${repo}"
+	log DEBUG "Release lock for: ${repo}"
 
 	cmd rm -f "${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")"
 }
@@ -69,7 +69,7 @@ break_lock() {
 		local diff_date=$(( ${now_date} - ${lock_file_date} ))
 
 		if [ ${diff_date} -lt 43200 ]; then
-			log INFO "The lock was created before $(format_time_from_timestamp ${diff_date}) "
+			log DEBUG "The lock was created before $(format_time_from_timestamp ${diff_date}) "
 			return ${EXIT_FALSE}
 		else
 			log ERROR "The lock was created before $(format_time_from_timestamp ${diff_date}), BREAKING LOCK"
@@ -89,8 +89,11 @@ log() {
 
 	local date="$(format_date)"
 
-	echo "${date} [${type}] ${message}" >> /var/log/borg
-	>&2 echo "${date} [${type}] ${message}"
+	echo "${date} [${type}] ${message}" >> "/var/log/borg-$(date "+%Y-%m-%d")"
+
+	if [[ ${type} != "DEBUG" ]]; then
+		>&2 echo "${date} [${type}] ${message}"
+	fi
 }
 
 
@@ -105,7 +108,7 @@ log_backup() {
 }
 
 cmd() {
-	log INFO "Executing command: $@"
+	log DEBUG "Executing command: $@"
 
 	"$@"
 }
