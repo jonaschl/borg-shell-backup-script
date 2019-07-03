@@ -170,7 +170,9 @@ create_backup() {
 		fi
 	done
 
-	if ! cmd /usr/bin/borg create "${repo}::${tag}"  ${cmd_args} --verbose --stats -C "${compression}" ${paths}; then
+
+	log DEBUG "Additional cmd args: ${cmd_args}"
+	if ! cmd /usr/bin/borg create ${cmd_args} --verbose --stats -C "${compression}"  "${repo}::${tag}" ${paths}; then
 		log_backup "ERROR" "${repo}" "Could not create backup"
 		release_lock "${repo}"
 		return ${EXIT_ERROR}
