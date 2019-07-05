@@ -293,8 +293,17 @@ last_backup() {
 
 
 	# get tag
-	tmp=${line%%???, ????-??-?? ??:??:??}
-	tag=${tmp%%+([[:space:]])}
+	tmp=${line}
+	log_backup "DEBUG" "${repo}"  "Last backup line is:'${tmp}'"
+
+	tmp=${tmp%\[*\]}
+	tmp=${tmp%+([[:space:]])}
+	tmp=${tmp%%???, ????-??-?? ??:??:??}
+	tmp=${tmp%%+([[:space:]])}
+
+
+	tag=${tmp}
+
 	log_backup "INFO" "${repo}"  "Last backup tag is:'${tag}'"
 
 	tag_date=$(get_timestamp_from_date "${tag}")
