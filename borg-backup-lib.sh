@@ -288,6 +288,10 @@ last_backup() {
 		line="${backup}"
 	done < ${tmp_backup_list}
 
+	rm -f  "${tmp_backup_list}"
+
+
+
 	# get tag
 	tmp=${line%%???, ????-??-?? ??:??:??}
 	tag=${tmp%%+([[:space:]])}
