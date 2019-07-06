@@ -1,0 +1,39 @@
+#!/bin/bash
+
+. /usr/lib/borg-backup-lib.sh
+
+config=${1}
+command=${2}
+
+
+FILE="/etc/borg-backup-script/${config}"
+
+if [ -f "${FILE}" ]; then
+	. ${FILE}
+else
+	log "ERROR" "No such file: ${FILE}"
+	exit ${EXIT_ERROR}
+fi
+
+case ${command} in
+	"create")
+		if [[ ${CONFIG_CAN_CREATE} = ${TRUE} ]]; then
+			if ! create_backup "${REPO}" "${PASSWD}"  "${COMPRESSION}" "${CREATE_CMD_ARGS}" ${TIME_BETWEEN_MIN} ${PATHS}; then
+				echo "Failed to create the backup"
+			fi
+		fi
+	;;
+	"check")
+		if ! check_REPO "${REPO}" "${PASSWD}" ${PATHS}; then
+			echo "The backups are corrupted"
+		fi
+	;;
+	"list")
+		list_backups "${REPO}" "${PASSWD}"
+	;;
+	"last-backup")
+		last_backup "${REPO}" "${PASSWD}" ${TIME_BETWEEN_MAX}
+	;;
+
+esac
+

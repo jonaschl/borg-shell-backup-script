@@ -5,10 +5,21 @@ EXIT_ERROR=1
 EXIT_TRUE=0
 EXIT_FALSE=1
 
+
+TRUE=0
+FALSE=1
+
 LOCK_DIR="/var/borg/lock_dir"
 
 format_date() {
 	date "+%Y-%m-%d %H:%M:%S"
+}
+
+
+cmd() {
+	log DEBUG "Executing command: $@"
+
+	"$@"
 }
 
 
@@ -107,35 +118,6 @@ log_backup() {
 	log "${type}" "[${repo}] ${message}"
 }
 
-cmd() {
-	log DEBUG "Executing command: $@"
-
-	"$@"
-}
-
-create_backup_computer() {
-	local repo="${1}"
-	local passwd="${2}"
-	local compression="${3}"
-	local exclude="${4}"
-	local time_between="${5}"
-
-	shift 5
-	local paths="$@"
-
-	create_backup "${repo}" "${passwd}" "${compression}" "--exclude-from ${exclude}" "${time_between}" "$@"
-}
-
-create_backup_server() {
-	local repo="${1}"
-	local passwd="${2}"
-	local compression="${3}"
-
-	shift 3
-	local paths="$@"
-
-	create_backup "${repo}" "${passwd}" "${compression}" "" "" "$@"
-}
 
 create_backup() {
 	local repo="${1}"
