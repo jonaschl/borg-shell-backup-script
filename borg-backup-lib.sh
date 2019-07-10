@@ -231,6 +231,20 @@ format_time_from_timestamp() {
 	echo "${string}"
 }
 
+get_tag_from_line() {
+	local tmp="${1}"
+
+	log "DEBUG" "Last backup line is:'${tmp}'"
+
+	tmp=${tmp%\[*\]}
+	tmp=${tmp%+([[:space:]])}
+	tmp=${tmp%%???, ????-??-?? ??:??:??}
+	tmp=${tmp%%+([[:space:]])}
+
+
+	echo ${tmp}
+}
+
 last_backup() {
 	local repo="${1}"
 	local passwd="${2}"
@@ -272,19 +286,7 @@ last_backup() {
 
 	rm -f  "${tmp_backup_list}"
 
-
-
-	# get tag
-	tmp=${line}
-	log_backup "DEBUG" "${repo}"  "Last backup line is:'${tmp}'"
-
-	tmp=${tmp%\[*\]}
-	tmp=${tmp%+([[:space:]])}
-	tmp=${tmp%%???, ????-??-?? ??:??:??}
-	tmp=${tmp%%+([[:space:]])}
-
-
-	tag=${tmp}
+	tag="$(get_tag_from_line "${line}" )"
 
 	log_backup "INFO" "${repo}"  "Last backup tag is:'${tag}'"
 
@@ -348,8 +350,7 @@ check_repo() {
 
 	while read backup; do
 		# get tag
-		tmp=${backup%%???, ????-??-?? ??:??:??}
-		tag=${tmp%%+([[:space:]])}
+		tag="$(get_tag_from_line "${backup}" )"
 
 		check_backup "${repo}" "${passwd}" "${tag}" ${paths}
 	done < ${tmp_backup_list}
