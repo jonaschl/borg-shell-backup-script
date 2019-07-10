@@ -276,7 +276,7 @@ last_backup() {
 		sleep 300
 	done
 
-	cmd /usr/bin/borg list ${repo} > "${tmp_backup_list}"
+	/usr/bin/borg list ${repo} > "${tmp_backup_list}"
 
 	release_lock "${repo}"
 
@@ -344,7 +344,7 @@ check_repo() {
 	done
 
 	# cmd crashes here because  the redirect
-	cmd /usr/bin/borg list "${repo}" > "${tmp_backup_list}"
+	/usr/bin/borg list "${repo}" > "${tmp_backup_list}"
 
 	release_lock "${repo}"
 
