@@ -24,7 +24,7 @@ case ${command} in
 		fi
 	;;
 	"check")
-		if ! check_REPO "${REPO}" "${PASSWD}" ${PATHS}; then
+		if ! check_repo "${REPO}" "${PASSWD}" ${PATHS}; then
 			echo "The backups are corrupted"
 		fi
 	;;
@@ -33,6 +33,23 @@ case ${command} in
 	;;
 	"last-backup")
 		last_backup "${REPO}" "${PASSWD}" ${TIME_BETWEEN_MAX}
+	;;
+
+	"break-lock-borg")
+		break_lock_borg "${REPO}"
+	;;
+
+	"break-lock")
+		break_lock "${REPO}"
+	;;
+
+	"mount")
+		shift 2
+		mount_backup "${REPO}" "${PASSWD}" "$@"
+	;;
+
+	"check-backup")
+		check_backup "${REPO}" "${PASSWD}" "${3}" ${PATHS}
 	;;
 
 esac
