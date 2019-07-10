@@ -15,6 +15,31 @@ format_date() {
 	date "+%Y-%m-%d %H:%M:%S"
 }
 
+log() {
+	local type=${1}
+	shift
+
+	local message="$@"
+
+	local date="$(format_date)"
+
+	echo "${date} [${type}] ${message}" >> "/var/log/borg-$(date "+%Y-%m-%d")"
+
+	if [[ ${type} != "" ]]; then
+		>&2 echo "${date} [${type}] ${message}"
+	fi
+}
+
+
+log_backup() {
+	local type=${1}
+	local repo=${2}
+	shift 2
+
+	local message="$@"
+
+	log "${type}" "[${repo}] ${message}"
+}
 
 cmd() {
 	log DEBUG "Executing command: $@"
@@ -92,30 +117,12 @@ break_lock() {
 	return ${EXIT_TRUE}
 }
 
-log() {
-	local type=${1}
-	shift
 
-	local message="$@"
+break_lock_borg() {
+	local repo=${1}
 
-	local date="$(format_date)"
+	cmd /usr/bin/borg break-lock ${repo}
 
-	echo "${date} [${type}] ${message}" >> "/var/log/borg-$(date "+%Y-%m-%d")"
-
-	if [[ ${type} != "DEBUG" ]]; then
-		>&2 echo "${date} [${type}] ${message}"
-	fi
-}
-
-
-log_backup() {
-	local type=${1}
-	local repo=${2}
-	shift 2
-
-	local message="$@"
-
-	log "${type}" "[${repo}] ${message}"
 }
 
 
