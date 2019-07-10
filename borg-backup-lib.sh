@@ -417,7 +417,7 @@ check_backup() {
 	if [[ ${return_value} == ${EXIT_ERROR} ]]; then
 		log_backup ERROR "${repo}"  "Backup '${tag}' is corrupted"
 	else
-		log_backup DEBUG "${repo}" "Backup '${tag}' is ok"
+		log_backup INFO "${repo}" "Backup '${tag}' is ok"
 	fi
 
 	# Cleanup
