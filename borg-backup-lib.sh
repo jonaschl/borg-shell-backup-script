@@ -323,6 +323,25 @@ md5sum_get_sum() {
 	fi
 }
 
+
+mount_backup() {
+	local repo="${1}"
+	local passwd="${2}"
+	local tag=${3}
+	local mountpoint="${4}"
+
+	export BORG_PASSPHRASE="${passwd}"
+
+	# Load the fuse module
+	cmd modprobe fuse
+
+	cmd /usr/bin/borg mount "${repo}::${tag}" "${mountpoint}"
+
+	log INFO "Mounted Archive '${tag}' of repo '${repo}' under '${mountpoint}'"
+
+	unset BORG_PASSPHRASE
+}
+
 check_repo() {
 	local repo="${1}"
 	local passwd="${2}"
@@ -372,8 +391,6 @@ check_backup() {
 	# Export the password in this shell
 	export BORG_PASSPHRASE="${passwd}"
 
-	# Load the fuse module
-	cmd modprobe fuse
 
 	while ! acquire_lock "${repo}"; do
 		sleep 300
@@ -384,7 +401,7 @@ check_backup() {
 	echo "${tag}" > "${tmp_file}"
 
 	# mount backup
-	cmd /usr/bin/borg mount "${repo}::${tag}" "${tmp_dir}"
+	mount_backup "${repo}" "${passwd}" "${tag}" "${tmp_dir}"
 
 
 	for path in ${paths}; do
