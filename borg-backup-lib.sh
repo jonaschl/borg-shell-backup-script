@@ -48,7 +48,7 @@ cmd() {
 }
 
 
-create_lock_file_from_repo() {
+create_file_from_repo() {
 	local repo=${1}
 
 	echo ${repo//\//.}
@@ -64,7 +64,7 @@ acquire_lock() {
 	fi
 
 	log DEBUG "Acquiring lock for ${repo}"
-	touch "${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")"
+	touch "${LOCK_DIR}/$(create_file_from_repo "${repo}")"
 
 	return ${EXIT_OK}
 }
@@ -79,13 +79,13 @@ release_lock() {
 
 	log DEBUG "Release lock for: ${repo}"
 
-	cmd rm -f "${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")"
+	cmd rm -f "${LOCK_DIR}/$(create_file_from_repo "${repo}")"
 }
 
 check_for_lock() {
 	local repo=${1}
 
-	if [ -f "${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")" ]; then
+	if [ -f "${LOCK_DIR}/$(create_file_from_repo "${repo}")" ]; then
 		return ${EXIT_TRUE}
 	fi
 
@@ -95,7 +95,7 @@ check_for_lock() {
 break_lock() {
 	local repo=${1}
 
-	local lock_file="${LOCK_DIR}/$(create_lock_file_from_repo "${repo}")"
+	local lock_file="${LOCK_DIR}/$(create_file_from_repo "${repo}")"
 
 	if [ -f "${lock_file}" ]; then
 		# Check if the lock exist more then 12h
