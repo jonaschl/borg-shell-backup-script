@@ -9,7 +9,9 @@ EXIT_FALSE=1
 TRUE=0
 FALSE=1
 
-LOCK_DIR="/var/borg/lock_dir"
+DIR="/var/borg-backup-script"
+LOCK_DIR="${DIR}/lock_dir"
+CACHE_LAST_BACKUP_DIR="${DIR}/cache_last_backup"
 
 format_date() {
 	date "+%Y-%m-%d %H:%M:%S"
@@ -168,6 +170,7 @@ create_backup() {
 	else
 		log_backup "INFO" "${repo}" "Successfully created backup"
 		release_lock "${repo}"
+		put_last_backup_to_cache "${repo}" "${tag}"
 		return ${EXIT_OK}
 	fi
 }
@@ -279,23 +282,35 @@ last_backup() {
 		return ${EXIT_ERROR}
 	fi
 
+
 	while ! acquire_lock "${repo}"; do
 		sleep 300
 	done
 
-	/usr/bin/borg list ${repo} > "${tmp_backup_list}"
+	tag_date=$(get_last_backup_from_chache "${repo}")
+
+	if [ ! $? = ${EXIT_OK} ] || [[ "${tag_date}" == "" ]]; then
+
+		/usr/bin/borg list ${repo} > "${tmp_backup_list}"
+
+		while read backup; do
+			line="${backup}"
+		done < ${tmp_backup_list}
+
+		rm -f  "${tmp_backup_list}"
+
+		tag="$(get_tag_from_line "${line}" )"
+
+		log_backup "INFO" "${repo}"  "Last backup tag is:'${tag}'"
+
+		if [[ ${CONFIG_CAN_CREATE} = ${TRUE} ]]; then
+			put_last_backup_to_cache "${repo}" "${tag}"
+		fi
+	fi
+
 
 	release_lock "${repo}"
 
-	while read backup; do
-		line="${backup}"
-	done < ${tmp_backup_list}
-
-	rm -f  "${tmp_backup_list}"
-
-	tag="$(get_tag_from_line "${line}" )"
-
-	log_backup "INFO" "${repo}"  "Last backup tag is:'${tag}'"
 
 	tag_date=$(get_timestamp_from_date "${tag}")
 	now_date=$(get_timestamp_from_date "$(format_date)")
@@ -310,6 +325,49 @@ last_backup() {
 		return ${EXIT_ERROR}
 	fi
 
+}
+
+get_last_backup_from_chache() {
+	local repo="${1}"
+	local file
+
+	file="${CACHE_LAST_BACKUP_DIR}/$(create_file_from_repo "${repo}")"
+
+	if [ -f "${file}" ]; then
+		local last_modified=$(stat -c %Y "${file}")
+		local now=$(get_timestamp_from_date "$(format_date)")
+
+		diff=$(( ${now} - ${last_modified}))
+
+		if [ ${diff} -lt 604800 ]; then
+			cat "${file}"
+			return ${EXIT_OK}
+		else
+			return ${EXIT_ERROR}
+		fi
+	else
+		log DEBUG "No such file: ${file}"
+		return ${EXIT_ERROR}
+	fi
+
+}
+
+put_last_backup_to_cache() {
+	local repo="${1}"
+	local last_backup="${2}"
+	local file
+
+	file="${CACHE_LAST_BACKUP_DIR}/$(create_file_from_repo "${repo}")"
+
+	touch "${file}"
+
+	if [ -f "${file}" ]; then
+		log DEBUG "Caching last backup tag in ${file}"
+		echo "${last_backup}" > "${file}"
+		return ${EXIT_OK}
+	else
+		return ${EXIT_ERROR}
+	fi
 }
 
 prune_backup() {
