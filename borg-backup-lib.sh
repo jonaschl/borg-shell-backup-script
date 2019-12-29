@@ -287,9 +287,11 @@ last_backup() {
 		sleep 300
 	done
 
-	tag_date=$(get_last_backup_from_chache "${repo}")
+	tag=$(get_last_backup_from_chache "${repo}")
 
-	if [ ! $? = ${EXIT_OK} ] || [[ "${tag_date}" == "" ]]; then
+	log DEBUG "Cached tag date is: '${tag}'"
+
+	if [ ! $? = ${EXIT_OK} ] || [[ "${tag}" == "" ]]; then
 
 		/usr/bin/borg list ${repo} > "${tmp_backup_list}"
 
