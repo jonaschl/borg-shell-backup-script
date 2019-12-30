@@ -1,0 +1,11 @@
+[Unit]
+Description=Create borg backup for 
+
+[Timer]
+OnCalendar=
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+
+[Install]
+WantedBy=multi-user.target

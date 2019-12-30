@@ -1,0 +1,13 @@
+[Unit]
+Description=Create borg backup for %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/borg-backup-script  %i create
+Type=oneshot
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

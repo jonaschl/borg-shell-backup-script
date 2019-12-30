@@ -9,3 +9,5 @@ mkdir -p /etc/borg-backup-script
 cp -f example /etc/borg-backup-script/example
 cp -f borg-backup-script /usr/bin/borg-backup-script
 chmod 700 /usr/bin/borg-backup-script
+
+cp borg-backup-script@.service /etc/systemd/system
