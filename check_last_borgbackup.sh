@@ -16,17 +16,17 @@ cli_get_val() {
 while [ $# -gt 0 ]; do
     case "${1}" in
         # IPv6
-        --warn-time=*)
-            WARN_TIME="$(cli_get_val "${1}")"
+        --warning)
+            WARN_TIME="${2}"
 
             ;;
-        --error-time=*)
-            ERROR_TIME="$(cli_get_val "${1}")"
+        --critical)
+            ERROR_TIME="${2}"
 
             ;;
 
-        --config=*)
-            CONFIG="$(cli_get_val "${1}")"
+        --config)
+            CONFIG="${2}"
 
         ;;
         *)
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
             return ${EXIT_ICINGA_UNKNOWN}
             ;;
     esac
-    shift
+    shift 2
 done
 
 
