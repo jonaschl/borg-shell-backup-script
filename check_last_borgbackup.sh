@@ -21,7 +21,7 @@ while [ $# -gt 0 ]; do
         ;;
         *)
             error "Invalid argument: ${1}"
-            return ${EXIT_ICINGA_UNKNOWN}
+            exit ${EXIT_ICINGA_UNKNOWN}
             ;;
     esac
     shift 2
