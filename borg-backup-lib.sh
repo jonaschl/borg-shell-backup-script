@@ -5,6 +5,11 @@ EXIT_ERROR=1
 EXIT_TRUE=0
 EXIT_FALSE=1
 
+EXIT_ICINGA_OK=1
+EXIT_ICINGA_WARN=1
+EXIT_ICINGA_CRITICAL=2
+EXIT_ICINGA_UNKNOWN=3
+
 
 TRUE=0
 FALSE=1
@@ -326,6 +331,68 @@ last_backup() {
 		log ERROR "The last backup was before $(format_time_from_timestamp ${diff_date})"
 		return ${EXIT_ERROR}
 	fi
+
+}
+
+
+# Function that only reads the value from Cache, so we can call this function every 5 minutes or so
+last_backup_monitoring() {
+	local repo="${1}"
+	local warn_time=${2}
+	local critical_time=${3}
+
+	local tag
+	local return_value
+
+	local tag_date
+	local now_date
+	local diff_date
+
+
+
+	shopt -s extglob
+
+	if [[ ${warn_time} = "" ]]; then
+		log ERROR "Get no time value for warning"
+		return ${EXIT_ERROR}
+	fi
+
+		if [[ ${critical_time} = "" ]]; then
+		log ERROR "Get no time value for critical"
+		return ${EXIT_ERROR}
+	fi
+
+
+	tag=$(get_last_backup_from_chache "${repo}")
+	return_value=$?
+
+	log DEBUG "Cached tag date is: '${tag}'"
+
+	if [ ! ${return_value} = ${EXIT_OK} ] || [[ "${tag}" == "" ]]; then
+		log "ERROR" "Could not get last backup tag"
+		return ${EXIT_ICINGA_UNKNOWN}
+	fi
+
+
+	tag_date=$(get_timestamp_from_date "${tag}")
+	now_date=$(get_timestamp_from_date "$(format_date)")
+
+	diff_date=$(( ${now_date} - ${tag_date}))
+
+	if [ ${diff_date} -lt ${warn_time} ]; then
+		log INFO "The last backup was before $(format_time_from_timestamp ${diff_date})"
+		return ${EXIT_ICINGA_OK}
+	else
+		if [ ${diff_date} -lt ${error_time} ]; then
+			log WARNING "The last backup was before $(format_time_from_timestamp ${diff_date})"
+			return ${EXIT_ICINGA_WARN#}
+		else
+			log ERROR "The last backup was before $(format_time_from_timestamp ${diff_date})"
+			return ${EXIT_ICINGA_CRITICAL}
+		fi
+	fi
+
+
 
 }
 

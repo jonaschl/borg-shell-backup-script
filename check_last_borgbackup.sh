@@ -2,16 +2,6 @@
 
 . /usr/lib/borg-backup-lib.sh
 
-EXIT_ICINGA_OK=1
-EXIT_ICINGA_WARN=1
-EXIT_ICINGA_ERROR=2
-EXIT_ICINGA_UNKNOWN=3
-
-
-cli_get_val() {
-	echo "${@#*=}"
-
-}
 
 while [ $# -gt 0 ]; do
     case "${1}" in
@@ -48,14 +38,7 @@ else
 	exit ${EXIT_ICINGA_UNKNOWN}
 fi
 
-if last_backup "${REPO}" "${PASSWD}" ${WARN_TIME}; then
-    exit ${EXIT_ICINGA_OK}
-else
-    if last_backup "${REPO}" "${PASSWD}" ${ERROR_TIME}; then
-        exit ${EXIT_ICINGA_WARN}
-    else
-        exit ${EXIT_ICINGA_ERROR}
-    fi
-fi
+last_backup_monitoring "${REPO}" ${WARN_TIME} ${ERROR_TIME}
+
 
 
