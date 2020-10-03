@@ -3,6 +3,19 @@
 . /usr/lib/borg-backup-lib.sh
 
 
+log() {
+	local type=${1}
+	shift
+
+	local message="$@"
+
+	local date="$(format_date)"
+
+	>&2 echo "${date} [${type}] ${message}"
+
+}
+
+
 while [ $# -gt 0 ]; do
     case "${1}" in
         # IPv6
