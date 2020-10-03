@@ -20,7 +20,7 @@ while [ $# -gt 0 ]; do
 
         ;;
         *)
-            error "Invalid argument: ${1}"
+            log error "Invalid argument: ${1}"
             exit ${EXIT_ICINGA_UNKNOWN}
             ;;
     esac
