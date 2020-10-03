@@ -29,7 +29,7 @@ done
 
 
 
-FILE="/etc/borg-backup-script/${CONFIG}"
+FILE="/etc/borg-backup-script/${CONFIG}_monitoring"
 
 if [ -f "${FILE}" ]; then
 	. ${FILE}
