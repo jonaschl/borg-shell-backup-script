@@ -383,7 +383,7 @@ last_backup_monitoring() {
 		log INFO "The last backup was before $(format_time_from_timestamp ${diff_date})"
 		return ${EXIT_ICINGA_OK}
 	else
-		if [ ${diff_date} -lt ${error_time} ]; then
+		if [ ${diff_date} -lt ${critical_time} ]; then
 			log WARNING "The last backup was before $(format_time_from_timestamp ${diff_date})"
 			return ${EXIT_ICINGA_WARN#}
 		else
